@@ -10,7 +10,7 @@ type ProxySiteInfo struct {
 	Scheme         string
 	AutoGzip       bool
 	ResponseModify func(*http.Response) error
-	RequestModify  func(*http.Request)
+	RequestModify  func(*http.Request) error
 }
 
 func NewProxySiteInfo() ProxySiteInfo {

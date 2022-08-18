@@ -49,6 +49,12 @@ func init() {
 	Register.AddProxySite("api.github.com", proxySite)
 }
 
+func (p *github) ModifyRequest() func(req *http.Request) (err error) {
+	return func(req *http.Request) (err error) {
+		req.Header.Set("User-Agent", req.Header.Get("User-Agent")+" theresa proxy v2.0.0a1")
+		return
+	}
+}
 func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 	return func(res *http.Response) (err error) {
 

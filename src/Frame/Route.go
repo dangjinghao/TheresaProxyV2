@@ -1,29 +1,28 @@
-package Route
+package Frame
 
 import (
 	"TheresaProxyV2/src/Library"
 	"TheresaProxyV2/src/Register"
-	"fmt"
+	"github.com/gin-gonic/gin"
 	isDomain "github.com/jbenet/go-is-domain"
 	"net/http"
 )
 
-func DirectProxyRouter(proxyDomain string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func DirectProxyRouter(proxyDomain string) func(c *gin.Context) {
+	return func(c *gin.Context) {
 		if Register.ProxySiteCore[proxyDomain] == nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "不允许访问的域名")
+			c.String(http.StatusBadRequest, "不允许访问的域名")
 			return
 		}
 		if isDomain.IsDomain(proxyDomain) {
 			//为url中包含domain且未设定cookie的请求设置domain cookie
-			proxyTargetUrl := r.URL
+			proxyTargetUrl := c.Request.URL
 
 			proxyTargetUrl.Path = proxyTargetUrl.Path[3+len(proxyDomain):]
-			Library.ParamProxy(proxyDomain)(w, r)
+			Library.ParamProxy(proxyDomain)(c)
 		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "错误的域名")
+
+			c.String(http.StatusBadRequest, "错误的域名")
 			return
 		}
 	}
