@@ -14,14 +14,14 @@ type github struct {
 
 func init() {
 	var plugin github
-	plugin.allowedContentTypeSlice = []string{"json", "html"}
+	plugin.allowedContentTypeSlice = []string{"html"}
 	proxySite := Register.NewProxySiteInfo()
 	proxySite.Scheme = "https"
 
 	proxySite.ResponseModify = plugin.ModifyResponse()
 	proxySite.AutoGzip = true
 	Register.AddProxySite("github.com", proxySite)
-	Register.AddProxySite("github.githubassets.com", proxySite)
+	Register.AddProxySite("api.github.com", proxySite)
 }
 
 func (p *github) ModifyResponse() func(res *http.Response) (err error) {
@@ -43,7 +43,7 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 		}
 
 		b = bytes.Replace(b, []byte("https://github.com"), []byte("http://127.0.0.1:8080"), -1)
-		b = bytes.Replace(b, []byte("https://github.githubassets.com"), []byte("http://127.0.0.1:8080/~/github.githubassets.com"), -1)
+		b = bytes.Replace(b, []byte("https://api.github.com"), []byte("http://127.0.0.1:8080/~/api.github.com"), -1)
 
 		res.Body = io.NopCloser(bytes.NewReader(b))
 

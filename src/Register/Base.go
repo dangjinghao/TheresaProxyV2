@@ -1,7 +1,6 @@
 package Register
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 )
 
@@ -11,7 +10,7 @@ type ProxySiteInfo struct {
 	Scheme         string
 	AutoGzip       bool
 	ResponseModify func(*http.Response) error
-	RequestModify  func(*gin.Context)
+	RequestModify  func(*http.Request)
 }
 
 func NewProxySiteInfo() ProxySiteInfo {
