@@ -13,7 +13,7 @@ import (
 func tinyRouteHandler(w http.ResponseWriter, r *http.Request) {
 
 	requestURI := r.RequestURI
-	if requestURI == "/home" || requestURI == "/home/" {
+	if requestURI == "/proxy_home" || requestURI == "/proxy_home/" {
 		fmt.Fprintf(w, "home")
 	} else if strings.HasPrefix(requestURI, "/~/") {
 		domainEndIndex := strings.Index(requestURI[3:], "/")

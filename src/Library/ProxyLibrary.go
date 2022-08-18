@@ -90,7 +90,7 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 		if res.Header.Get("Content-Encoding") == "gzip" {
 			bodyReader, err = gzip.NewReader(res.Body)
 			defer bodyReader.Close()
-			defer res.Body.Close()
+
 			if err != nil {
 				return err
 			}
@@ -118,7 +118,10 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 			if res.Header.Get("Content-Length") != "" {
 				res.Header.Set("Content-Length", strconv.Itoa(gzipBuffer.Len()))
 			}
-
+			err = res.Body.Close()
+			if err != nil {
+				return err
+			}
 		} else {
 			//未启用gzip
 			err = Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res)

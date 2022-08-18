@@ -3,17 +3,42 @@ package plugins
 import (
 	"TheresaProxyV2/src/Register"
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
 type github struct {
 	allowedContentTypeSlice []string
+	byteGithubReplace       []byte
+	byteApiReplace          []byte
+}
+type Config struct {
+	ProxySiteScheme string `json:"proxy_site_scheme"`
+	ProxySiteDomain string `json:"proxy_site_domain"`
 }
 
 func init() {
 	var plugin github
+	filePtr, err := os.Open("config/github.json")
+	if err != nil {
+		panic("文件读取失败:" + err.Error())
+		return
+	}
+	var config Config
+	defer filePtr.Close()
+	decoder := json.NewDecoder(filePtr)
+	err = decoder.Decode(&config)
+	if err != nil {
+		panic("decode配置失败：" + err.Error())
+		return
+	} else {
+		plugin.byteGithubReplace = []byte(fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain))
+		plugin.byteApiReplace = []byte(fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain))
+	}
 	plugin.allowedContentTypeSlice = []string{"html"}
 	proxySite := Register.NewProxySiteInfo()
 	proxySite.Scheme = "https"
@@ -42,8 +67,8 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 			return err
 		}
 
-		b = bytes.Replace(b, []byte("https://github.com"), []byte("http://127.0.0.1:8080"), -1)
-		b = bytes.Replace(b, []byte("https://api.github.com"), []byte("http://127.0.0.1:8080/~/api.github.com"), -1)
+		b = bytes.Replace(b, []byte("https://github.com"), p.byteGithubReplace, -1)
+		b = bytes.Replace(b, []byte("https://api.github.com"), p.byteApiReplace, -1)
 
 		res.Body = io.NopCloser(bytes.NewReader(b))
 
