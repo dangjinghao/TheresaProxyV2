@@ -4,7 +4,6 @@ import (
 	"TheresaProxyV2/src/Register"
 	"bytes"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -14,21 +13,27 @@ import (
 func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err error) {
 
 	return func(res *http.Response) (err error) {
-		//	if r.StatusCode >= 400 && r.StatusCode <= 600 {
-		//		//400错误无法修改body会报错
-		//		return nil
-		//	}
+
+		if res.StatusCode >= 400 && res.StatusCode <= 600 {
+			//400错误无法修改body会报错
+			return nil
+		}
 		var bodyReader io.ReadCloser
 		if res.Header.Get("Content-Encoding") == "gzip" {
 			bodyReader, err = gzip.NewReader(res.Body)
+			if err != nil {
+				if string(err.Error()) == "EOF" {
+					return nil
+				} else {
+					return err
+				}
+			}
+			//当err为EOF时bodyReader并未打开，会导致空指针异常
 			defer bodyReader.Close()
 
-			if err != nil {
-				return err
-			}
 			unGzippedBody, err := io.ReadAll(bodyReader)
 			if err != nil {
-				fmt.Println(err)
+				return err
 			}
 
 			res.Body = io.NopCloser(bytes.NewReader(unGzippedBody))

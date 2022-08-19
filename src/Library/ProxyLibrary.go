@@ -74,8 +74,10 @@ func ParamProxy(proxyDomain string) func(c *gin.Context) {
 			ErrorHandler:   noContextCancelErrors,
 			ModifyResponse: modifyResponseMain(proxyTargetUrl),
 		}
-
-		c.SetCookie("proxy-domain", proxyDomain, 3600, "/", "", true, false)
+		_, err := c.Cookie("proxy-domain")
+		if err != nil {
+			c.SetCookie("proxy-domain", proxyDomain, 3600, "/", "", true, false)
+		}
 		proxy.ServeHTTP(c.Writer, c.Request)
 
 	}
