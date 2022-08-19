@@ -13,16 +13,14 @@ import (
 func CookieProxy(c *gin.Context) (err error) {
 	cookieProxyDomain, err := c.Cookie("proxy-domain")
 	if err != nil {
-		c.String(http.StatusBadRequest, "错误的cookie")
+		c.String(http.StatusBadRequest, "cookie缺失，不允许访问")
 		return nil
 	}
 	if Register.ProxySiteCore[cookieProxyDomain] == nil {
 		c.String(http.StatusBadRequest, "不允许访问的域名")
 		return nil
 	}
-	if Register.MiddlewareCore[cookieProxyDomain] != nil {
-		(*Register.MiddlewareCore[cookieProxyDomain])(c)
-	}
+
 	proxyTargetUrl := c.Request.URL
 	proxyTargetUrl.Host = cookieProxyDomain
 
@@ -38,10 +36,8 @@ func CookieProxy(c *gin.Context) (err error) {
 	}
 
 	proxy := &httputil.ReverseProxy{
-		Director: director,
-		ErrorHandler: func(http.ResponseWriter, *http.Request, error) {
-			// handle error
-		},
+		Director:       director,
+		ErrorHandler:   noContextCancelErrors,
 		ModifyResponse: modifyResponseMain(proxyTargetUrl),
 	}
 	proxy.ServeHTTP(c.Writer, c.Request)
@@ -51,9 +47,6 @@ func CookieProxy(c *gin.Context) (err error) {
 // 通过param参数来获取domain
 func ParamProxy(proxyDomain string) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		if Register.MiddlewareCore[proxyDomain] != nil {
-			(*Register.MiddlewareCore[proxyDomain])(c)
-		}
 
 		proxyTargetUrl := c.Request.URL
 		proxyTargetUrl.Path = proxyTargetUrl.Path[1+len(proxyDomain):]

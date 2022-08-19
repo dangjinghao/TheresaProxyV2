@@ -18,7 +18,7 @@ func DirectProxyRouter(proxyDomain string) func(c *gin.Context) {
 			//为url中包含domain且未设定cookie的请求设置domain cookie
 			proxyTargetUrl := c.Request.URL
 
-			proxyTargetUrl.Path = proxyTargetUrl.Path[3+len(proxyDomain):]
+			proxyTargetUrl.Path = proxyTargetUrl.Path[2:]
 			Library.ParamProxy(proxyDomain)(c)
 		} else {
 

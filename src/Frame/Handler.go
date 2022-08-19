@@ -23,11 +23,14 @@ func TinyRouteHandler(c *gin.Context) {
 		if domainEndIndex < 0 {
 			requestDomain = requestURI[1:]
 		} else {
-			requestDomain = requestURI[1 : domainEndIndex+1]
+			requestDomain = requestURI[3 : domainEndIndex+3]
 		}
 		if isDomain.IsDomain(requestDomain) {
 			DirectProxyRouter(requestDomain)(c)
+		} else {
+			c.String(http.StatusBadRequest, "不合规请求")
 		}
+
 		return
 	} else {
 		domainEndIndex := strings.Index(requestURI[1:], "/")

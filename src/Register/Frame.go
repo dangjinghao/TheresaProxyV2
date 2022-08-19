@@ -4,12 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var MiddlewareCore map[string]*gin.HandlerFunc
+var MiddlewareCore []*gin.HandlerFunc
 
-func AddMiddlewareFunc(domain string, middlewareFunc gin.HandlerFunc) {
-	MiddlewareCore[domain] = &middlewareFunc
+func AddMiddlewareFunc(middlewareFunc gin.HandlerFunc) {
+	MiddlewareCore = append(MiddlewareCore, &middlewareFunc)
 	return
 }
 func init() {
-	MiddlewareCore = make(map[string]*gin.HandlerFunc, 0)
+	MiddlewareCore = make([]*gin.HandlerFunc, 0)
 }

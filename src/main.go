@@ -3,6 +3,7 @@ package main
 import (
 	_ "TheresaProxyV2/plugins"
 	"TheresaProxyV2/src/Frame"
+	"TheresaProxyV2/src/Register"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,11 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.Default()
+
+	for _, v := range Register.MiddlewareCore {
+		r.Use(*v)
+	}
+
 	r.Any("/*url", Frame.TinyRouteHandler)
 	r.Run("127.0.0.1:8081") //TODO 配置文件读取
 
