@@ -9,16 +9,16 @@ import (
 	"net/http/httputil"
 )
 
-// 通过使用cookie的domain值来确定请求域名
-func CookieProxy(c *gin.Context) (err error) {
+// CookieProxy 通过使用cookie的domain值来确定请求域名
+func CookieProxy(c *gin.Context) {
 	cookieProxyDomain, err := c.Cookie("proxy-domain")
 	if err != nil {
 		c.String(http.StatusBadRequest, "cookie缺失，不允许访问")
-		return nil
+		return
 	}
 	if Register.ProxySiteCore[cookieProxyDomain] == nil {
 		c.String(http.StatusBadRequest, "不允许访问的域名")
-		return nil
+		return
 	}
 
 	proxyTargetUrl := c.Request.URL
@@ -41,10 +41,10 @@ func CookieProxy(c *gin.Context) (err error) {
 		ModifyResponse: modifyResponseMain(proxyTargetUrl),
 	}
 	proxy.ServeHTTP(c.Writer, c.Request)
-	return nil
+
 }
 
-// 通过param参数来获取domain
+// ParamProxy 通过param参数来获取domain
 func ParamProxy(proxyDomain string) func(c *gin.Context) {
 	return func(c *gin.Context) {
 

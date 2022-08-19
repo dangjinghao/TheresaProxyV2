@@ -6,29 +6,32 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 )
 
 type github struct {
-	allowedContentTypeSlice []string
-	assetGithubReplace      string
-	byteGithubReplace       []byte
-	byteApiReplace          []byte
+	allowedContentTypeSlice     []string
+	stringObjectsContentReplace string
+	byteGithubReplace           string
+	byteRawReplace              string
+	byteApiReplace              string
 }
 type ConfigStruct struct {
 	ProxySiteScheme string `json:"proxy_site_scheme"`
 	ProxySiteDomain string `json:"proxy_site_domain"`
 }
 
+var logger *logrus.Entry
+
 func init() {
 	var plugin github
-	filePtr, err := os.Open("config/github.json")
-
+	filePtr, err := Register.GetPluginConfig("github")
+	logger = Register.GetPluginLogger("github")
 	if err != nil {
-		panic("文件读取失败:" + err.Error())
+		logger.Panic("文件读取失败:" + err.Error())
 		return
 	}
 	var config ConfigStruct
@@ -36,12 +39,13 @@ func init() {
 	decoder := json.NewDecoder(filePtr)
 	err = decoder.Decode(&config)
 	if err != nil {
-		panic("decode配置失败：" + err.Error())
+		logger.Panic("decode配置失败：" + err.Error())
 		return
 	} else {
-		plugin.byteGithubReplace = []byte(fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain))
-		plugin.byteApiReplace = []byte(fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain))
-		plugin.assetGithubReplace = fmt.Sprintf("%s://%s/~/objects.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
+		plugin.byteGithubReplace = fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain)
+		plugin.byteApiReplace = fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain)
+		plugin.byteRawReplace = fmt.Sprintf("%s://%s/~/raw.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
+		plugin.stringObjectsContentReplace = fmt.Sprintf("%s://%s/~/objects.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
 
 	}
 	Register.AddMiddlewareFunc(plugin.RedirectGitClientMiddleware())
@@ -52,6 +56,7 @@ func init() {
 	proxySite.AutoGzip = true
 	Register.AddProxySite("github.com", proxySite)
 	Register.AddProxySite("api.github.com", proxySite)
+	Register.AddProxySite("raw.githubusercontent.com", proxySite)
 	Register.AddProxySite("objects.githubusercontent.com", proxySite)
 }
 
@@ -92,9 +97,23 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 			return err
 		}
 
-		b = bytes.Replace(b, []byte("https://github.com"), p.byteGithubReplace, -1)
-		b = bytes.Replace(b, []byte("https://api.github.com"), p.byteApiReplace, -1)
-		res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://objects.githubusercontent.com", p.assetGithubReplace, -1))
+		b = bytes.Replace(b, []byte("https://github.com"), []byte(p.byteGithubReplace), -1)
+		b = bytes.Replace(b, []byte("https://api.github.com"), []byte(p.byteApiReplace), -1)
+		b = bytes.Replace(b, []byte("https://raw.githubusercontent.com"), []byte(p.byteRawReplace), -1)
+
+		if res.Header.Get("Location") != "" {
+			if strings.Index(res.Header.Get("Location"), "https://github.com") >= 0 {
+				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://github.com", string(p.byteGithubReplace), -1))
+			} else if strings.Index(res.Header.Get("Location"), "https://objects.githubusercontent.com") >= 0 {
+				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://objects.githubusercontent.com", p.stringObjectsContentReplace, -1))
+			} else if strings.Index(res.Header.Get("Location"), "https://raw.githubusercontent.com") >= 0 {
+				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://raw.githubusercontent.com", p.byteRawReplace, -1))
+			} else {
+				logger.Error("出现未被记录的Location:" + res.Header.Get("Location"))
+			}
+
+		}
+
 		res.Body = io.NopCloser(bytes.NewReader(b))
 
 		return nil
