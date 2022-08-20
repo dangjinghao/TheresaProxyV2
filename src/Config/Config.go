@@ -1,6 +1,8 @@
 package Config
 
-import "embed"
+import (
+	"embed"
+)
 
 //go:embed "config.json"
 var TPV2ConfigFs embed.FS

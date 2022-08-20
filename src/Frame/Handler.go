@@ -2,7 +2,7 @@ package Frame
 
 import (
 	"TheresaProxyV2/src/Config"
-	"TheresaProxyV2/src/Library"
+	"TheresaProxyV2/src/Register"
 	_ "embed"
 	"github.com/gin-gonic/gin"
 	isDomain "github.com/jbenet/go-is-domain"
@@ -16,9 +16,15 @@ var indexPage string
 func TinyRouteHandler(c *gin.Context) {
 	logger := Config.NewLoggerWithName("tinyRouter")
 	requestURI := c.Request.RequestURI
+
 	if requestURI == "/proxy_home" || requestURI == "/proxy_home/" {
 		c.String(http.StatusOK, "home")
+
+	} else if pluginRoutePath := c.Request.URL.Path; Register.PluginRoute[pluginRoutePath] != nil {
+		(*Register.PluginRoute[pluginRoutePath])(c)
+
 	} else if strings.HasPrefix(requestURI, "/~/") {
+		//直接代理
 		domainEndIndex := strings.Index(requestURI[3:], "/")
 
 		var requestDomain string
@@ -44,12 +50,13 @@ func TinyRouteHandler(c *gin.Context) {
 
 			requestDomain = requestURI[1:]
 		} else {
+
 			requestDomain = strings.ToLower(requestURI[1 : domainEndIndex+1])
 		}
 		if isDomain.IsDomain(requestDomain) {
-			Library.ParamProxy(requestDomain)(c)
+			ParamProxyRouter(requestDomain)(c)
 		} else {
-			Library.CookieProxy(c)
+			SessionProxyRouter(requestDomain)(c)
 		}
 
 	}

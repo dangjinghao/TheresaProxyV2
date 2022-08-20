@@ -8,6 +8,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -46,12 +48,21 @@ func main() {
 	}
 	logger.Infof("目前环境为：%s", config.ENV)
 	r := gin.Default()
-	logger.Info("加载中间件")
 
+	logger.Debug("加载session中间件")
+	store := cookie.NewStore([]byte("proxy-secret"))
+	r.Use(sessions.Sessions("proxy-session", store))
+	logger.Debug("session中间件加载完成")
+
+	for k, _ := range Register.PluginRoute {
+		logger.Info("添加拓展路由" + k)
+	}
+
+	logger.Debug("加载拓展中间件")
 	for _, v := range Register.MiddlewareCore {
 		r.Use(*v)
 	}
-	logger.Info("中间件加载完成")
+	logger.Debug("拓展中间件加载完成")
 
 	r.Any("/*url", Frame.TinyRouteHandler)
 	logger.Infof("TheresaProxyV2启动，地址:%v", config.Addr)

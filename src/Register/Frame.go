@@ -8,6 +8,8 @@ import (
 
 var MiddlewareCore []*gin.HandlerFunc
 
+var PluginRoute map[string]*gin.HandlerFunc
+
 func AddMiddlewareFunc(middlewareFunc gin.HandlerFunc) {
 
 	MiddlewareCore = append(MiddlewareCore, &middlewareFunc)
@@ -28,4 +30,12 @@ func GetPluginConfig(name string) (*os.File, error) {
 }
 func init() {
 	MiddlewareCore = make([]*gin.HandlerFunc, 0)
+	PluginRoute = make(map[string]*gin.HandlerFunc, 0)
+}
+
+func NewCron() {}
+
+// 仅支持静态路径
+func AddRoute(url string, handlerFunc gin.HandlerFunc) {
+	PluginRoute[url] = &handlerFunc
 }

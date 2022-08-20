@@ -1,34 +1,35 @@
 package Library
 
 import (
+	"TheresaProxyV2/src/Config"
 	"TheresaProxyV2/src/Register"
 	"context"
-	"fmt"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httputil"
 )
 
-// CookieProxy 通过使用cookie的domain值来确定请求域名
-func CookieProxy(c *gin.Context) {
-	cookieProxyDomain, err := c.Cookie("proxy-domain")
-	if err != nil {
-		c.String(http.StatusBadRequest, "cookie缺失，不允许访问")
+// SessionProxy 通过使用cookie的domain值来确定请求域名
+func SessionProxy(c *gin.Context) {
+	session := sessions.Default(c)
+	var proxyDomain string
+	if session.Get("domain") == nil {
+		c.String(http.StatusBadRequest, "不允许访问")
 		return
+	} else {
+		proxyDomain = session.Get("domain").(string)
 	}
-	if Register.ProxySiteCore[cookieProxyDomain] == nil {
+
+	if Register.ProxySiteCore[proxyDomain] == nil {
 		c.String(http.StatusBadRequest, "不允许访问的域名")
 		return
 	}
 
 	proxyTargetUrl := c.Request.URL
-	proxyTargetUrl.Host = cookieProxyDomain
+	proxyTargetUrl.Host = proxyDomain
 
-	proxyTargetUrl.Scheme = Register.ProxySiteCore[cookieProxyDomain].Scheme
-	if Register.ProxySiteCore[cookieProxyDomain].RequestModify != nil {
-		Register.ProxySiteCore[cookieProxyDomain].RequestModify(c.Request)
-	}
-
+	proxyTargetUrl.Scheme = Register.ProxySiteCore[proxyDomain].Scheme
 	director := func(req *http.Request) {
 		req.Header = c.Request.Header
 		req.URL = proxyTargetUrl
@@ -52,10 +53,6 @@ func ParamProxy(proxyDomain string) func(c *gin.Context) {
 		proxyTargetUrl.Path = proxyTargetUrl.Path[1+len(proxyDomain):]
 		proxyTargetUrl.Host = proxyDomain
 		proxyTargetUrl.Scheme = Register.ProxySiteCore[proxyDomain].Scheme
-		if Register.ProxySiteCore[proxyDomain].RequestModify != nil {
-			Register.ProxySiteCore[proxyDomain].RequestModify(c.Request)
-		}
-
 		director := func(req *http.Request) {
 			req.Header = c.Request.Header
 			req.URL = proxyTargetUrl
@@ -67,10 +64,7 @@ func ParamProxy(proxyDomain string) func(c *gin.Context) {
 			ErrorHandler:   noContextCancelErrors,
 			ModifyResponse: modifyResponseMain(proxyTargetUrl),
 		}
-		_, err := c.Cookie("proxy-domain")
-		if err != nil {
-			c.SetCookie("proxy-domain", proxyDomain, 3600, "/", "", true, false)
-		}
+
 		proxy.ServeHTTP(c.Writer, c.Request)
 
 	}
@@ -78,9 +72,9 @@ func ParamProxy(proxyDomain string) func(c *gin.Context) {
 
 // https://github.com/golang/go/issues/20071#issuecomment-926644055
 func noContextCancelErrors(rw http.ResponseWriter, req *http.Request, err error) {
+	logger := Config.NewLoggerWithName("ReverseProxyHandler")
 	if err != context.Canceled {
-
-		fmt.Errorf("http: proxy error: %v", err)
+		logger.Errorf("http: proxy error: %v", err)
 	}
 	rw.WriteHeader(http.StatusBadGateway)
 }
