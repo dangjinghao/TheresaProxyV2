@@ -6,7 +6,6 @@ require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
-	github.com/jbenet/go-is-domain v1.0.5
 	github.com/sirupsen/logrus v1.9.0
 )
 

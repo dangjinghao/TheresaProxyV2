@@ -42,7 +42,7 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 			}
 
 			res.Body = io.NopCloser(bytes.NewReader(unGzippedBody))
-			if Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res) != nil {
+			if Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify != nil {
 				err = Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res)
 				if err != nil {
 					logger.Debugf("%q调用对应域名responseModify失败，异常为%v", res.Request.RequestURI, err.Error())
@@ -81,7 +81,7 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 			}
 		} else {
 			logger.Debugf("%q响应未使用gzip,跳过压缩", res.Request.RequestURI)
-			if Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res) != nil {
+			if Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify != nil {
 				err = Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res)
 				if err != nil {
 					logger.Debugf("%q调用对应域名responseModify失败，异常为%v", res.Request.RequestURI, err.Error())

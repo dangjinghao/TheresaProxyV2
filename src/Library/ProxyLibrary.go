@@ -20,13 +20,18 @@ func SessionProxy(c *gin.Context) {
 	} else {
 		proxyDomain = session.Get("domain").(string)
 	}
-
+	if Register.NickNameMap[proxyDomain] != "" {
+		proxyDomain = Register.NickNameMap[proxyDomain]
+	}
 	if Register.ProxySiteCore[proxyDomain] == nil {
 		c.String(http.StatusBadRequest, "不允许访问的域名")
 		return
 	}
 
 	proxyTargetUrl := c.Request.URL
+	if Register.NickNameMap[proxyDomain] != "" {
+		proxyDomain = Register.NickNameMap[proxyDomain]
+	}
 	proxyTargetUrl.Host = proxyDomain
 
 	proxyTargetUrl.Scheme = Register.ProxySiteCore[proxyDomain].Scheme
@@ -34,6 +39,10 @@ func SessionProxy(c *gin.Context) {
 		req.Header = c.Request.Header
 		req.URL = proxyTargetUrl
 		req.Host = req.URL.Host
+	}
+	//在取得别名的真名后调整请求
+	if Register.ProxySiteCore[proxyDomain].RequestModify != nil {
+		Register.ProxySiteCore[proxyDomain].RequestModify(c.Request)
 	}
 
 	proxy := &httputil.ReverseProxy{
@@ -51,12 +60,19 @@ func ParamProxy(proxyDomain string) func(c *gin.Context) {
 
 		proxyTargetUrl := c.Request.URL
 		proxyTargetUrl.Path = proxyTargetUrl.Path[1+len(proxyDomain):]
+		if Register.NickNameMap[proxyDomain] != "" {
+			proxyDomain = Register.NickNameMap[proxyDomain]
+		}
 		proxyTargetUrl.Host = proxyDomain
 		proxyTargetUrl.Scheme = Register.ProxySiteCore[proxyDomain].Scheme
 		director := func(req *http.Request) {
 			req.Header = c.Request.Header
 			req.URL = proxyTargetUrl
 			req.Host = req.URL.Host
+		}
+
+		if Register.ProxySiteCore[proxyDomain].RequestModify != nil {
+			Register.ProxySiteCore[proxyDomain].RequestModify(c.Request)
 		}
 
 		proxy := &httputil.ReverseProxy{
