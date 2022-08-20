@@ -14,10 +14,6 @@ func DirectProxyRouter(proxyDomain string) func(c *gin.Context) {
 			c.String(http.StatusBadRequest, "不允许访问的域名")
 			return
 		}
-		//为url中包含domain且未设定cookie的请求设置domain cookie
-		proxyTargetUrl := c.Request.URL
-		proxyTargetUrl.Path = proxyTargetUrl.Path[2:]
-
 		Library.ParamProxy(proxyDomain)(c)
 	}
 }

@@ -33,8 +33,6 @@ func init() {
 	PluginRoute = make(map[string]*gin.HandlerFunc, 0)
 }
 
-func NewCron() {}
-
 // 仅支持静态路径
 func AddRoute(url string, handlerFunc gin.HandlerFunc) {
 	PluginRoute[url] = &handlerFunc

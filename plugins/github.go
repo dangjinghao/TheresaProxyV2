@@ -28,36 +28,50 @@ var logger *logrus.Entry
 
 func init() {
 	var plugin github
+	var config ConfigStruct
+	plugin.getConfig(&config)
+	plugin.loadReplaceStr(config)
+	plugin.allowedContentTypeSlice = []string{"html"}
+	plugin.addToRegister()
+
+}
+
+func (p *github) getConfig(config *ConfigStruct) {
 	filePtr, err := Register.GetPluginConfig("github")
 	logger = Register.GetPluginLogger("github")
 	if err != nil {
 		logger.Panic("文件读取失败:" + err.Error())
 		return
 	}
-	var config ConfigStruct
+
 	defer filePtr.Close()
 	decoder := json.NewDecoder(filePtr)
-	err = decoder.Decode(&config)
+	err = decoder.Decode(config)
 	if err != nil {
 		logger.Panic("decode配置失败：" + err.Error())
 		return
-	} else {
-		plugin.byteGithubReplace = fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain)
-		plugin.byteApiReplace = fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain)
-		plugin.byteRawReplace = fmt.Sprintf("%s://%s/~/raw.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
-		plugin.stringObjectsContentReplace = fmt.Sprintf("%s://%s/~/objects.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
-
 	}
-	Register.AddMiddlewareFunc(plugin.RedirectGitClientMiddleware())
-	plugin.allowedContentTypeSlice = []string{"html"}
+}
+
+func (p *github) loadReplaceStr(config ConfigStruct) {
+	p.byteGithubReplace = fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain)
+	p.byteApiReplace = fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain)
+	p.byteRawReplace = fmt.Sprintf("%s://%s/~/raw.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
+	p.stringObjectsContentReplace = fmt.Sprintf("%s://%s/~/objects.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
+
+}
+
+func (p *github) addToRegister() {
 	proxySite := Register.NewProxySiteInfo()
 	proxySite.Scheme = "https"
-	proxySite.ResponseModify = plugin.ModifyResponse()
+	proxySite.ResponseModify = p.ModifyResponse()
 	proxySite.AutoGzip = true
 	Register.AddProxySite("github.com", proxySite)
 	Register.AddProxySite("api.github.com", proxySite)
 	Register.AddProxySite("raw.githubusercontent.com", proxySite)
 	Register.AddProxySite("objects.githubusercontent.com", proxySite)
+	Register.AddMiddlewareFunc(p.RedirectGitClientMiddleware())
+
 }
 
 func (p *github) ModifyRequest() func(req *http.Request) (err error) {
@@ -85,7 +99,9 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 		if !p.isResponseModifyType(res) {
 			return nil
 		}
+		//删除安全头防止无法加载
 		delete(res.Header, "Content-Security-Policy")
+
 		//res.Request.Header.Set("Referer", "https://github.com")
 		bodyReader := res.Body
 		b, err := io.ReadAll(bodyReader)
@@ -109,13 +125,12 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 			} else if strings.Index(res.Header.Get("Location"), "https://raw.githubusercontent.com") >= 0 {
 				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://raw.githubusercontent.com", p.byteRawReplace, -1))
 			} else {
-				logger.Error("出现未被记录的Location:" + res.Header.Get("Location"))
+				logger.Errorf("出现未被记录的Location:%q,URL:%q", res.Header.Get("Location"), res.Request.RequestURI)
 			}
-
 		}
 
+		//将修改后的body复制回body
 		res.Body = io.NopCloser(bytes.NewReader(b))
-
 		return nil
 	}
 }
@@ -128,5 +143,4 @@ func (p *github) isResponseModifyType(res *http.Response) bool {
 		}
 	}
 	return false
-
 }
