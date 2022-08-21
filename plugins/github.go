@@ -19,28 +19,31 @@ type github struct {
 	byteRawReplace              string
 	byteApiReplace              string
 }
-type ConfigStruct struct {
+
+var githubLogger *logrus.Entry
+
+type githubConfig struct {
 	ProxySiteScheme string `json:"proxy_site_scheme"`
 	ProxySiteDomain string `json:"proxy_site_domain"`
 }
 
-var logger *logrus.Entry
-
 func init() {
 	var plugin github
-	var config ConfigStruct
+	var config githubConfig
+	githubLogger = Register.GetPluginLogger("github")
 	plugin.getConfig(&config)
+
 	plugin.loadReplaceStr(config)
 	plugin.allowedContentTypeSlice = []string{"html"}
 	plugin.addToRegister()
 
 }
 
-func (p *github) getConfig(config *ConfigStruct) {
+func (p *github) getConfig(config *githubConfig) {
 	filePtr, err := Register.GetPluginConfig("github")
-	logger = Register.GetPluginLogger("github")
+
 	if err != nil {
-		logger.Panic("文件读取失败:" + err.Error())
+		githubLogger.Panic("文件读取失败:" + err.Error())
 		return
 	}
 
@@ -48,12 +51,12 @@ func (p *github) getConfig(config *ConfigStruct) {
 	decoder := json.NewDecoder(filePtr)
 	err = decoder.Decode(config)
 	if err != nil {
-		logger.Panic("decode配置失败：" + err.Error())
+		githubLogger.Panic("decode配置失败：" + err.Error())
 		return
 	}
 }
 
-func (p *github) loadReplaceStr(config ConfigStruct) {
+func (p *github) loadReplaceStr(config githubConfig) {
 	p.byteGithubReplace = fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain)
 	p.byteApiReplace = fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain)
 	p.byteRawReplace = fmt.Sprintf("%s://%s/~/raw.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
@@ -125,12 +128,13 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 			} else if strings.Index(res.Header.Get("Location"), "https://raw.githubusercontent.com") >= 0 {
 				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://raw.githubusercontent.com", p.byteRawReplace, -1))
 			} else {
-				logger.Errorf("出现未被记录的Location:%q,URL:%q", res.Header.Get("Location"), res.Request.RequestURI)
+				githubLogger.Errorf("出现未被记录的Location:%q,URL:%q", res.Header.Get("Location"), res.Request.RequestURI)
 			}
 		}
 
 		//将修改后的body复制回body
 		res.Body = io.NopCloser(bytes.NewReader(b))
+		bodyReader.Close()
 		return nil
 	}
 }
