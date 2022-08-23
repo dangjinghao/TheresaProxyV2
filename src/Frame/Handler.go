@@ -14,11 +14,7 @@ var indexPage string
 func TinyRouteHandler(c *gin.Context) {
 	//logger := Config.NewLoggerWithName("tinyRouter")
 	requestURI := c.Request.RequestURI
-
-	if requestURI == "/proxy_home" || requestURI == "/proxy_home/" {
-		c.String(http.StatusOK, "home")
-
-	} else if pluginRoutePath := c.Request.URL.Path; Register.PluginRoute[pluginRoutePath] != nil {
+	if pluginRoutePath := c.Request.URL.Path; Register.PluginRoute[pluginRoutePath] != nil {
 		//拓展路由
 		(*Register.PluginRoute[pluginRoutePath])(c)
 
@@ -62,4 +58,10 @@ func TinyRouteHandler(c *gin.Context) {
 
 	}
 
+}
+
+func TestRouteHandler(c *gin.Context) {
+	c.Request.RequestURI = c.Request.RequestURI[5:]
+	c.Request.URL.Path = c.Request.URL.Path[5:]
+	TinyRouteHandler(c)
 }

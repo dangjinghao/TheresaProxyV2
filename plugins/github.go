@@ -105,20 +105,14 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 		//删除安全头防止无法加载
 		delete(res.Header, "Content-Security-Policy")
 
-		//res.Request.Header.Set("Referer", "https://github.com")
-		bodyReader := res.Body
-		b, err := io.ReadAll(bodyReader)
-		if err != nil {
-			return err
-		}
-		err = res.Body.Close()
+		byteBody, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
 
-		b = bytes.Replace(b, []byte("https://github.com"), []byte(p.byteGithubReplace), -1)
-		b = bytes.Replace(b, []byte("https://api.github.com"), []byte(p.byteApiReplace), -1)
-		b = bytes.Replace(b, []byte("https://raw.githubusercontent.com"), []byte(p.byteRawReplace), -1)
+		byteBody = bytes.Replace(byteBody, []byte("https://github.com"), []byte(p.byteGithubReplace), -1)
+		byteBody = bytes.Replace(byteBody, []byte("https://api.github.com"), []byte(p.byteApiReplace), -1)
+		byteBody = bytes.Replace(byteBody, []byte("https://raw.githubusercontent.com"), []byte(p.byteRawReplace), -1)
 
 		if res.Header.Get("Location") != "" {
 			if strings.Index(res.Header.Get("Location"), "https://github.com") >= 0 {
@@ -133,8 +127,7 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 		}
 
 		//将修改后的body复制回body
-		res.Body = io.NopCloser(bytes.NewReader(b))
-		bodyReader.Close()
+		res.Body = io.NopCloser(bytes.NewReader(byteBody))
 		return nil
 	}
 }

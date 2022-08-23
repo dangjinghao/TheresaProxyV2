@@ -32,7 +32,6 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 					return err
 				}
 			}
-			//当err为EOF时bodyReader并未打开，会导致空指针异常
 			defer bodyReader.Close()
 
 			unGzippedBody, err := io.ReadAll(bodyReader)
@@ -57,16 +56,17 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 				return err
 			}
 			var gzipBuffer bytes.Buffer
-			w := gzip.NewWriter(&gzipBuffer)
-			_, err = w.Write(unGzippedBody)
+			gzipBufferWriter := gzip.NewWriter(&gzipBuffer)
+			_, err = gzipBufferWriter.Write(unGzippedBody)
 			if err != nil {
 				logger.Debugf("向gzipbuffer中写入gzip压缩后的的body失败,异常为%v", err.Error())
-
 				return err
 			}
 
-			err = w.Close()
-
+			if err = gzipBufferWriter.Close(); err != nil {
+				logger.Debugf("关闭gzipReader异常,异常为%v", err.Error())
+				return err
+			}
 			res.Body = io.NopCloser(bytes.NewReader(gzipBuffer.Bytes()))
 			res.ContentLength = int64(gzipBuffer.Len())
 			if res.Header.Get("Content-Length") != "" {
@@ -74,11 +74,12 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 			}
 
 			//确切说我不知道到底应不应该关闭这个
-			err = res.Body.Close()
-			if err != nil {
-				logger.Debugf("关闭%v的body失败,异常为%v", res.Request.RequestURI, err.Error())
-				return err
-			}
+			//或许不应该关
+			//err = res.Body.Close()
+			//if err != nil {
+			//	logger.Debugf("关闭%v的body失败,异常为%v", res.Request.RequestURI, err.Error())
+			//	return err
+			//}
 		} else {
 			logger.Debugf("%q响应未使用gzip,跳过压缩", res.Request.RequestURI)
 			if Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify != nil {
