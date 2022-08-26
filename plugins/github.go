@@ -43,7 +43,7 @@ func init() {
 func (p *github) getConfig(config *githubConfig) {
 	filePtr, err := os.Open("config/github.json")
 	if err != nil {
-		githubLogger.Error("文件读取失败:" + err.Error())
+		githubLogger.Panic("文件读取失败:" + err.Error())
 		return
 	}
 	defer filePtr.Close()
