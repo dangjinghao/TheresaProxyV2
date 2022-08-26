@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -40,13 +41,11 @@ func init() {
 }
 
 func (p *github) getConfig(config *githubConfig) {
-	filePtr, err := Register.GetPluginConfig("github")
-
+	filePtr, err := os.Open("config/github.json")
 	if err != nil {
-		githubLogger.Panic("文件读取失败:" + err.Error())
+		githubLogger.Error("文件读取失败:" + err.Error())
 		return
 	}
-
 	defer filePtr.Close()
 	decoder := json.NewDecoder(filePtr)
 	err = decoder.Decode(config)

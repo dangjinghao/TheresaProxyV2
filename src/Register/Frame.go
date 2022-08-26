@@ -3,7 +3,6 @@ package Register
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"os"
 )
 
 var MiddlewareCore []*gin.HandlerFunc
@@ -23,11 +22,6 @@ func GetPluginLogger(name string) *logrus.Entry {
 	return pluginLogger
 }
 
-// 传入不带后缀的插件文件名
-func GetPluginConfig(name string) (*os.File, error) {
-	return os.Open("config/" + name + ".json")
-
-}
 func init() {
 	MiddlewareCore = make([]*gin.HandlerFunc, 0)
 	PluginRoute = make(map[string]*gin.HandlerFunc, 0)

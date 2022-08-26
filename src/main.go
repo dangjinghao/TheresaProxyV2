@@ -20,33 +20,32 @@ type TPV2Config struct {
 	ENV  string `json:"env"`
 }
 
-var config TPV2Config
+var tpv2Config TPV2Config
 
 func main() {
+	Config.Version = "0.1.14"
 
 	logger := Config.NewLoggerWithName("main")
-
-	if filePtr, err := os.Open("config/config.json"); err != nil {
-		fmt.Printf("文件读取失败:%s,启用默认设置\n", err.Error())
+	if filePtr, err := os.Open("tpv2Config/tpv2Config.json"); err != nil {
+		fmt.Printf("配置文件读取失败:%s,启用默认设置\n", err.Error())
 		configStr, _ := Config.TPV2ConfigFs.ReadFile("config.json")
-		json.Unmarshal(configStr, &config)
+		json.Unmarshal(configStr, &tpv2Config)
 	} else {
 		decoder := json.NewDecoder(filePtr)
-		err = decoder.Decode(&config)
+		err = decoder.Decode(&tpv2Config)
 		filePtr.Close()
 	}
 
-	if config.ENV == "development" {
+	if tpv2Config.ENV == "development" {
 		logrus.SetLevel(logrus.DebugLevel)
-	} else if config.ENV == "production" {
+	} else if tpv2Config.ENV == "production" {
 		logrus.SetLevel(logrus.InfoLevel)
 		gin.SetMode(gin.ReleaseMode)
-	} else if config.ENV == "trace" {
-		logrus.SetLevel(logrus.TraceLevel)
 	} else {
 		panic("未知的环境变量设置")
 	}
-	logger.Infof("目前环境为：%s", config.ENV)
+	logger.Infof("目前环境为：%s", tpv2Config.ENV)
+	logger.Infof("当前版本为%q", Config.Version)
 	r := gin.Default()
 
 	logger.Debug("加载session中间件")
@@ -65,9 +64,9 @@ func main() {
 	logger.Debug("拓展中间件加载完成")
 
 	r.Any("/*url", Frame.TinyRouteHandler)
-	logger.Infof("TheresaProxyV2启动，地址:%v", config.Addr)
+	logger.Infof("TheresaProxyV2启动，地址:%v", tpv2Config.Addr)
 
-	if err := r.Run(config.Addr); err != nil {
+	if err := r.Run(tpv2Config.Addr); err != nil {
 		logger.Panicf("TheresaProxyV2启动失败:%v", err)
 	}
 
