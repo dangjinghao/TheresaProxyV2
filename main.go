@@ -24,7 +24,7 @@ var tpv2Config TPV2Config
 
 func main() {
 	logger := rawConfig.NewLoggerWithName("main")
-	if filePtr, err := os.Open("Config/config.json"); err != nil {
+	if filePtr, err := os.Open("config/config.json"); err != nil {
 		fmt.Printf("配置文件读取失败:%s,启用默认设置\n", err.Error())
 		configStr, _ := rawConfig.TPV2ConfigFs.ReadFile("config.json")
 		json.Unmarshal(configStr, &tpv2Config)
