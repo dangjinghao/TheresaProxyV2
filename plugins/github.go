@@ -76,19 +76,19 @@ func (p *github) addToRegister() {
 
 }
 
-func (p *github) ModifyRequest() func(req *http.Request) (err error) {
-	return func(req *http.Request) (err error) {
-		req.Header.Set("User-Agent", req.Header.Get("User-Agent")+" theresa proxy v2.0.0a1")
-		return
-	}
-}
+//func (p *github) ModifyRequest() func(req *http.Request) (err error) {
+//	return func(req *http.Request) (err error) {
+//		req.Header.Set("User-Agent", req.Header.Get("User-Agent")+" theresa proxy v2.0.0a1")
+//		return
+//	}
+//}
 
 func (p *github) RedirectGitClientMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if strings.Index(c.Request.Header.Get("User-Agent"), "git") >= 0 &&
-			strings.Index(c.Request.URL.Path, "github.com") != 1 {
+			strings.Index(c.Request.URL.Path, "github.com") == -1 {
 			//c.String(http.StatusBadRequest, fmt.Sprintf(`git客户端请将URL修改为 "/github.com%v" 而不是 "%v" `, c.Request.URL.Path, c.Request.RequestURI))
-			c.Redirect(http.StatusSeeOther, fmt.Sprintf(`/github.com%v`, c.Request.RequestURI))
+			c.Redirect(http.StatusSeeOther, fmt.Sprintf(`/~/github.com%v`, c.Request.RequestURI))
 		} else {
 			c.Next()
 		}
