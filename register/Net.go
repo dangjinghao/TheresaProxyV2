@@ -1,7 +1,7 @@
-package Register
+package register
 
 import (
-	"TheresaProxyV2/src/Config"
+	"TheresaProxyV2/rawConfig"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -25,18 +25,18 @@ func NewProxySiteInfo() ProxySiteInfo {
 func AddProxySite(domain string, proxySite ProxySiteInfo) {
 	if proxySite.Scheme == "" {
 		proxySite.Scheme = "http"
-		logger.Errorf("站点%q缺少scheme，将其设置为http", domain)
+		logger.Errorf("站点%v缺少scheme，将其设置为http", domain)
 	}
-	logger.Infof("添加代理站点%q", domain)
+	logger.Infof("添加代理站点%v", domain)
 	ProxySiteCore[domain] = &proxySite
 	if proxySite.Nickname != "" {
-		logger.Infof("添加代理站点%q别名%q", domain, proxySite.Nickname)
+		logger.Infof("添加代理站点%v别名%v", domain, proxySite.Nickname)
 		NickNameMap[proxySite.Nickname] = domain
 	}
 	return
 }
 func init() {
-	logger = Config.NewLoggerWithName("netRegister")
+	logger = rawConfig.NewLoggerWithName("netRegister")
 	ProxySiteCore = make(map[string]*ProxySiteInfo, 0)
 	NickNameMap = make(map[string]string, 0)
 }

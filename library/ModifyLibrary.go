@@ -1,8 +1,8 @@
-package Library
+package library
 
 import (
-	"TheresaProxyV2/src/Config"
-	"TheresaProxyV2/src/Register"
+	"TheresaProxyV2/rawConfig"
+	"TheresaProxyV2/register"
 	"bytes"
 	"compress/gzip"
 	"io"
@@ -12,11 +12,11 @@ import (
 )
 
 func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err error) {
-	logger := Config.NewLoggerWithName("modifyResponseMain")
+	logger := rawConfig.NewLoggerWithName("modifyResponseMain")
 	return func(res *http.Response) (err error) {
 
 		if res.StatusCode >= 400 && res.StatusCode <= 600 {
-			logger.Infof("请求%q取得异常状态码:%v", res.Request.RequestURI, res.StatusCode)
+			logger.Infof("请求%v取得异常状态码:%v", res.Request.RequestURI, res.StatusCode)
 			return nil
 		}
 		var bodyReader io.ReadCloser
@@ -25,7 +25,7 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 			bodyReader, err = gzip.NewReader(res.Body)
 			if err != nil {
 				if string(err.Error()) == "EOF" {
-					logger.Debugf("%q响应体为EOF", res.Request.RequestURI)
+					logger.Debugf("%v响应体为EOF", res.Request.RequestURI)
 
 					return nil
 				} else {
@@ -36,15 +36,15 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 
 			unGzippedBody, err := io.ReadAll(bodyReader)
 			if err != nil {
-				logger.Debugf("%q响应体ungzip失败，异常为%v", res.Request.RequestURI, err.Error())
+				logger.Debugf("%v响应体ungzip失败，异常为%v", res.Request.RequestURI, err.Error())
 				return err
 			}
 
 			res.Body = io.NopCloser(bytes.NewReader(unGzippedBody))
-			if Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify != nil {
-				err = Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res)
+			if register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify != nil {
+				err = register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res)
 				if err != nil {
-					logger.Debugf("%q调用对应域名responseModify失败，异常为%v", res.Request.RequestURI, err.Error())
+					logger.Debugf("%v调用对应域名responseModify失败，异常为%v", res.Request.RequestURI, err.Error())
 					return err
 				}
 			}
@@ -52,7 +52,7 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 			//重新生成body以启用gzip压缩
 			unGzippedBody, err = io.ReadAll(res.Body)
 			if err != nil {
-				logger.Debugf("%q再读取ungzip的body失败，异常为%v", res.Request.RequestURI, err.Error())
+				logger.Debugf("%v再读取ungzip的body失败，异常为%v", res.Request.RequestURI, err.Error())
 				return err
 			}
 			var gzipBuffer bytes.Buffer
@@ -81,11 +81,11 @@ func modifyResponseMain(proxyTargetUrl *url.URL) func(res *http.Response) (err e
 			//	return err
 			//}
 		} else {
-			logger.Debugf("%q响应未使用gzip,跳过压缩", res.Request.RequestURI)
-			if Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify != nil {
-				err = Register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res)
+			logger.Debugf("%v响应未使用gzip,跳过压缩", res.Request.RequestURI)
+			if register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify != nil {
+				err = register.ProxySiteCore[proxyTargetUrl.Host].ResponseModify(res)
 				if err != nil {
-					logger.Debugf("%q调用对应域名responseModify失败，异常为%v", res.Request.RequestURI, err.Error())
+					logger.Debugf("%v调用对应域名responseModify失败，异常为%v", res.Request.RequestURI, err.Error())
 					return err
 				}
 			}

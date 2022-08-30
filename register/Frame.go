@@ -1,4 +1,4 @@
-package Register
+package register
 
 import (
 	"github.com/gin-gonic/gin"

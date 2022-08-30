@@ -1,4 +1,4 @@
-package Config
+package rawConfig
 
 import (
 	nested "github.com/antonfisher/nested-logrus-formatter"

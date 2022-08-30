@@ -1,7 +1,7 @@
-package Frame
+package frame
 
 import (
-	"TheresaProxyV2/src/Library"
+	"TheresaProxyV2/library"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -9,12 +9,12 @@ import (
 func DirectProxyRouter(proxyDomain string) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		c.Request.URL.Path = c.Request.URL.Path[2:]
-		Library.ParamProxy(proxyDomain)(c)
+		library.ParamProxy(proxyDomain)(c)
 	}
 }
 func SessionProxyRouter(proxyDomain string) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		Library.SessionProxy(c)
+		library.SessionProxy(c)
 	}
 }
 
@@ -25,7 +25,7 @@ func ParamProxyRouter(requestDomain string) func(c *gin.Context) {
 			session.Set("domain", requestDomain)
 			session.Save()
 		}
-		Library.ParamProxy(requestDomain)(c)
+		library.ParamProxy(requestDomain)(c)
 
 	}
 }

@@ -1,7 +1,7 @@
 package plugins
 
 import (
-	"TheresaProxyV2/src/Register"
+	"TheresaProxyV2/register"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -16,9 +16,9 @@ import (
 type github struct {
 	allowedContentTypeSlice     []string
 	stringObjectsContentReplace string
-	byteGithubReplace           string
-	byteRawReplace              string
-	byteApiReplace              string
+	stringGithubReplace         string
+	stringRawReplace            string
+	stringApiReplace            string
 }
 
 var githubLogger *logrus.Entry
@@ -31,11 +31,11 @@ type githubConfig struct {
 func init() {
 	var plugin github
 	var config githubConfig
-	githubLogger = Register.GetPluginLogger("github")
+	githubLogger = register.GetPluginLogger("github")
 	plugin.getConfig(&config)
 
 	plugin.loadReplaceStr(config)
-	plugin.allowedContentTypeSlice = []string{"html"}
+	plugin.allowedContentTypeSlice = []string{"text"}
 	plugin.addToRegister()
 
 }
@@ -56,23 +56,23 @@ func (p *github) getConfig(config *githubConfig) {
 }
 
 func (p *github) loadReplaceStr(config githubConfig) {
-	p.byteGithubReplace = fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain)
-	p.byteApiReplace = fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain)
-	p.byteRawReplace = fmt.Sprintf("%s://%s/~/raw.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
+	p.stringGithubReplace = fmt.Sprintf("%s://%s", config.ProxySiteScheme, config.ProxySiteDomain)
+	p.stringApiReplace = fmt.Sprintf("%s://%s/~/api.github.com", config.ProxySiteScheme, config.ProxySiteDomain)
+	p.stringRawReplace = fmt.Sprintf("%s://%s/~/raw.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
 	p.stringObjectsContentReplace = fmt.Sprintf("%s://%s/~/objects.githubusercontent.com", config.ProxySiteScheme, config.ProxySiteDomain)
 
 }
 
 func (p *github) addToRegister() {
-	proxySite := Register.NewProxySiteInfo()
+	proxySite := register.NewProxySiteInfo()
 	proxySite.Scheme = "https"
 	proxySite.ResponseModify = p.ModifyResponse()
 	proxySite.AutoGzip = true
-	Register.AddProxySite("github.com", proxySite)
-	Register.AddProxySite("api.github.com", proxySite)
-	Register.AddProxySite("raw.githubusercontent.com", proxySite)
-	Register.AddProxySite("objects.githubusercontent.com", proxySite)
-	Register.AddMiddlewareFunc(p.RedirectGitClientMiddleware())
+	register.AddProxySite("github.com", proxySite)
+	register.AddProxySite("api.github.com", proxySite)
+	register.AddProxySite("raw.githubusercontent.com", proxySite)
+	register.AddProxySite("objects.githubusercontent.com", proxySite)
+	register.AddMiddlewareFunc(p.RedirectGitClientMiddleware())
 
 }
 
@@ -109,19 +109,19 @@ func (p *github) ModifyResponse() func(res *http.Response) (err error) {
 			return err
 		}
 
-		byteBody = bytes.Replace(byteBody, []byte("https://github.com"), []byte(p.byteGithubReplace), -1)
-		byteBody = bytes.Replace(byteBody, []byte("https://api.github.com"), []byte(p.byteApiReplace), -1)
-		byteBody = bytes.Replace(byteBody, []byte("https://raw.githubusercontent.com"), []byte(p.byteRawReplace), -1)
+		byteBody = bytes.Replace(byteBody, []byte("https://github.com"), []byte(p.stringGithubReplace), -1)
+		byteBody = bytes.Replace(byteBody, []byte("https://api.github.com"), []byte(p.stringApiReplace), -1)
+		byteBody = bytes.Replace(byteBody, []byte("https://raw.githubusercontent.com"), []byte(p.stringRawReplace), -1)
 
 		if res.Header.Get("Location") != "" {
 			if strings.Index(res.Header.Get("Location"), "https://github.com") >= 0 {
-				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://github.com", string(p.byteGithubReplace), -1))
+				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://github.com", string(p.stringGithubReplace), -1))
 			} else if strings.Index(res.Header.Get("Location"), "https://objects.githubusercontent.com") >= 0 {
 				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://objects.githubusercontent.com", p.stringObjectsContentReplace, -1))
 			} else if strings.Index(res.Header.Get("Location"), "https://raw.githubusercontent.com") >= 0 {
-				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://raw.githubusercontent.com", p.byteRawReplace, -1))
+				res.Header.Set("Location", strings.Replace(res.Header.Get("Location"), "https://raw.githubusercontent.com", p.stringRawReplace, -1))
 			} else {
-				githubLogger.Errorf("出现未被记录的Location:%q,URL:%q", res.Header.Get("Location"), res.Request.RequestURI)
+				githubLogger.Errorf("出现未被记录的Location:%v,URL:%v", res.Header.Get("Location"), res.Request.RequestURI)
 			}
 		}
 

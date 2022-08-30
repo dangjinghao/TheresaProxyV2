@@ -1,4 +1,4 @@
-package Config
+package rawConfig
 
 import (
 	"embed"

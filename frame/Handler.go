@@ -1,7 +1,7 @@
-package Frame
+package frame
 
 import (
-	"TheresaProxyV2/src/Register"
+	"TheresaProxyV2/register"
 	_ "embed"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -14,9 +14,9 @@ var indexPage string
 func TinyRouteHandler(c *gin.Context) {
 	//logger := Config.NewLoggerWithName("tinyRouter")
 	requestURI := c.Request.RequestURI
-	if pluginRoutePath := c.Request.URL.Path; Register.PluginRoute[pluginRoutePath] != nil {
+	if pluginRoutePath := c.Request.URL.Path; register.PluginRoute[pluginRoutePath] != nil {
 		//拓展路由
-		(*Register.PluginRoute[pluginRoutePath])(c)
+		(*register.PluginRoute[pluginRoutePath])(c)
 
 	} else if strings.HasPrefix(requestURI, "/~/") {
 		//直接代理
@@ -29,7 +29,7 @@ func TinyRouteHandler(c *gin.Context) {
 			requestDomain = requestURI[3 : domainEndIndex+3]
 		}
 		//是否存在
-		if Register.ProxySiteCore[requestDomain] != nil || Register.NickNameMap[requestDomain] != "" {
+		if register.ProxySiteCore[requestDomain] != nil || register.NickNameMap[requestDomain] != "" {
 
 			DirectProxyRouter(requestDomain)(c)
 		} else {
@@ -49,7 +49,7 @@ func TinyRouteHandler(c *gin.Context) {
 			requestDomain = strings.ToLower(requestURI[1 : domainEndIndex+1])
 		}
 		//是否存在
-		if Register.ProxySiteCore[requestDomain] != nil || Register.NickNameMap[requestDomain] != "" {
+		if register.ProxySiteCore[requestDomain] != nil || register.NickNameMap[requestDomain] != "" {
 			ParamProxyRouter(requestDomain)(c)
 		} else {
 			SessionProxyRouter(requestDomain)(c)
