@@ -26,6 +26,7 @@ func SessionAdapter(c *gin.Context) {
 	}
 	if core.ProxySites[domain] == nil {
 		c.String(http.StatusBadRequest, "不允许访问")
+		return
 	}
 	targetUrl := c.Request.URL
 	targetUrl.Host = domain
@@ -70,6 +71,7 @@ func SubPathAdapter(domain string) func(c *gin.Context) {
 		}
 		if core.InSlice[string](domain, core.BannedSites) {
 			c.String(http.StatusBadRequest, "不允许访问")
+			return
 		}
 		targetUrl.Host = domain
 		targetUrl.Scheme = core.ProxySites[domain].Scheme

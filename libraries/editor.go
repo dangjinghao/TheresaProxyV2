@@ -78,23 +78,6 @@ type gzipCodec struct {
 }
 
 func (m gzipCodec) compress(reader io.Reader) (newReader io.Reader, err error, length int64) {
-	gReader, err := gzip.NewReader(reader)
-	if err != nil {
-		return nil, err, length
-	}
-	defer gReader.Close()
-	byteBody, err := io.ReadAll(gReader)
-	if err != nil {
-		return nil, err, length
-	}
-	length = int64(len(byteBody))
-	newReader = io.NopCloser(bytes.NewReader(byteBody))
-
-	return
-
-}
-
-func (m gzipCodec) decompress(reader io.Reader) (newReader io.Reader, err error) {
 	unGzippedBody, err := io.ReadAll(reader)
 	if err != nil {
 		return
@@ -110,5 +93,29 @@ func (m gzipCodec) decompress(reader io.Reader) (newReader io.Reader, err error)
 		return
 	}
 	newReader = io.NopCloser(bytes.NewReader(gzipBuffer.Bytes()))
+	length = int64(gzipBuffer.Len())
 	return
+
+}
+
+/*
+ */
+func (m gzipCodec) decompress(reader io.Reader) (newReader io.Reader, err error) {
+	gReader, err := gzip.NewReader(reader)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer gReader.Close()
+	byteBody, err := io.ReadAll(gReader)
+
+	if err != nil {
+		return nil, err
+	}
+
+	newReader = io.NopCloser(bytes.NewReader(byteBody))
+
+	return
+
 }

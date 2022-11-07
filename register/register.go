@@ -2,6 +2,8 @@ package register
 
 import (
 	"TheresaProxyV2/core"
+	"errors"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -57,4 +59,22 @@ func ProxySite(target string, property *SiteProperty) {
 		core.BannedSites = append(core.BannedSites, target)
 		logger.Debugf("已把%s添加入禁止子目录反代列表", target)
 	}
+}
+
+// SetSessionDomain 直接修改session，不推荐使用
+func SetSessionDomain(ctx *gin.Context, domain string) {
+	session := sessions.Default(ctx)
+	session.Set("domain", domain)
+	session.Save()
+
+}
+
+// SetTargetDomain 修改用户请求的反代站点
+func SetTargetDomain(ctx *gin.Context, domain string) error {
+	if core.ProxySites[domain] != nil {
+		SetSessionDomain(ctx, domain)
+		return nil
+	}
+	return errors.New("尝试修改目标为未注册域名")
+
 }
