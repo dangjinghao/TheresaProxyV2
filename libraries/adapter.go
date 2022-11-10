@@ -86,6 +86,7 @@ func SubPathAdapter(domain string) func(c *gin.Context) {
 		}
 		//自动反代到根目录
 		if core.ProxySites[domain].AutoRedirect && !directProxy {
+			c.Header("Cache-control", "no-cache")
 			c.Redirect(http.StatusMovedPermanently, "/")
 			return
 		}
