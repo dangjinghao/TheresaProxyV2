@@ -59,6 +59,8 @@ func ProxySite(target string, property *SiteProperty) {
 		core.BannedSites = append(core.BannedSites, target)
 		logger.Debugf("已把%s添加入禁止子目录反代列表", target)
 	}
+	logger.Debugf("添加成功:%s://%s", property.Scheme, target)
+
 }
 
 // SetSessionDomain 直接修改session，不推荐使用
@@ -77,4 +79,9 @@ func SetTargetDomain(ctx *gin.Context, domain string) error {
 	}
 	return errors.New("尝试修改目标为未注册域名")
 
+}
+
+// FlagValue 返回使用`-add`添加的对应flag名的拓展参数,由于使通过`;`和`=`分割，不支持参数的key和value存在此两个字符
+func FlagValue(name string) string {
+	return core.FlagDict[name]
 }
