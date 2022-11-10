@@ -16,6 +16,7 @@ type SiteProperty struct {
 	Nickname     string //站点别名
 	AutoCompress bool   //启用自动解压压缩
 	NoDirect     bool   //如果为true，将无法通过访问子目录方式反代
+	AutoRedirect bool   //如果为true，在使用子目录访问并修改目标域名后自动跳转到根目录
 	core.SiteBehavior
 }
 
@@ -47,6 +48,7 @@ func ProxySite(target string, property *SiteProperty) {
 		Scheme:       property.Scheme,
 		AutoCompress: property.AutoCompress,
 		SiteBehavior: property.SiteBehavior,
+		AutoRedirect: property.AutoRedirect,
 	}
 	if property.Nickname != "" {
 		core.Nicknames[property.Nickname] = target
@@ -73,15 +75,28 @@ func SetSessionDomain(ctx *gin.Context, domain string) {
 
 // SetTargetDomain 修改用户请求的反代站点
 func SetTargetDomain(ctx *gin.Context, domain string) error {
-	if core.ProxySites[domain] != nil {
-		SetSessionDomain(ctx, domain)
-		return nil
-	}
-	return errors.New("尝试修改目标为未注册域名")
 
+	if !core.ExistDomain(domain) {
+		return errors.New("尝试修改目标为未注册域名")
+	}
+	if core.Nicknames[domain] != "" {
+		domain = core.Nicknames[domain]
+	}
+
+	SetSessionDomain(ctx, domain)
+	return nil
 }
 
 // FlagValue 返回使用`-add`添加的对应flag名的拓展参数,由于使通过`;`和`=`分割，不支持参数的key和value存在此两个字符
 func FlagValue(name string) string {
 	return core.FlagDict[name]
+}
+
+func ExistDomain(domain string) bool {
+	return core.ExistDomain(domain)
+}
+
+func GetSessionDomain(ctx *gin.Context) string {
+	session := sessions.Default(ctx)
+	return session.Get("domain").(string)
 }

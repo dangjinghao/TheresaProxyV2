@@ -29,6 +29,7 @@ type SiteBehavior interface {
 type SiteProperty struct {
 	Scheme       string
 	AutoCompress bool
+	AutoRedirect bool
 	SiteBehavior
 }
 

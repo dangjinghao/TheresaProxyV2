@@ -13,9 +13,10 @@ import (
 func responseEditor(targetUrl *url.URL) func(res *http.Response) error {
 	return func(res *http.Response) error {
 		logger := core.ComponentLogger("modifyResponseMain")
-		if res.StatusCode >= 400 && res.StatusCode <= 600 {
-			logger.Debugf("请求%s取得异常状态码:%d", targetUrl, res.StatusCode)
+		if res.ContentLength == 0 {
+			logger.Debugf("%s 响应体为空,跳过修改", res.Request.RequestURI)
 			return nil
+
 		}
 		var compressCodec codec
 		switch res.Header.Get("Content-Encoding") {

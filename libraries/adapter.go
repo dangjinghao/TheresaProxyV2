@@ -50,29 +50,46 @@ func SessionAdapter(c *gin.Context) {
 
 func SubPathAdapter(domain string) func(c *gin.Context) {
 	return func(c *gin.Context) {
-		session := sessions.Default(c)
-		if session.Get("domain") == nil || session.Get("domain").(string) != domain {
-			session.Set("domain", domain)
-			err := session.Save()
-			if err != nil {
-				return
+
+		targetUrl := c.Request.URL
+
+		//用于判断是否为直接反代
+		var directProxy bool
+
+		//如果包含PathPrefix，将其删除
+		if strings.HasPrefix(targetUrl.Path, core.PathPrefix) {
+			targetUrl.Path = targetUrl.Path[core.PathPrefixLength-1:]
+			directProxy = true
+		} else {
+			//不包含前缀就修改session
+			session := sessions.Default(c)
+			if session.Get("domain") == nil || session.Get("domain").(string) != domain {
+				session.Set("domain", domain)
+				err := session.Save()
+				if err != nil {
+					return
+				}
+
 			}
 		}
 
-		targetUrl := c.Request.URL
-		//如果包含PathPrefix，将其删除
-		if strings.HasPrefix(targetUrl.Path, core.PathPrefix) {
-			targetUrl.Path = targetUrl.Path[1+len(domain):]
-		}
 		//删除域名子路径
 		targetUrl.Path = targetUrl.Path[1+len(domain):]
+		//取得本名
 		if core.Nicknames[domain] != "" {
 			domain = core.Nicknames[domain]
 		}
+		//是否允许通过子路径访问
 		if core.InSlice[string](domain, core.BannedSites) {
 			c.String(http.StatusBadRequest, "不允许访问")
 			return
 		}
+		//自动反代到根目录
+		if core.ProxySites[domain].AutoRedirect && !directProxy {
+			c.Redirect(http.StatusMovedPermanently, "/")
+			return
+		}
+
 		targetUrl.Host = domain
 		targetUrl.Scheme = core.ProxySites[domain].Scheme
 		director := func(req *http.Request) {

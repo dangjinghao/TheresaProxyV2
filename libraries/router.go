@@ -6,6 +6,7 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -21,14 +22,14 @@ func tinyRouter(c *gin.Context) {
 	} else if strings.HasPrefix(requestURI, core.PathPrefix) {
 		//存在前缀时的不修改session直接反代
 		domainEnd := strings.Index(requestURI[core.PathPrefixLength:], "/")
-		var domain string
+
 		if domainEnd < 0 {
 			// /~/xxx
-			//TODO 不允许访问
+			c.String(http.StatusBadRequest, "不允许访问")
 			return
 		}
 		//取得无session反代的domain
-		domain = domain[core.PathPrefixLength : domainEnd+core.PathPrefixLength]
+		domain := routerPath[core.PathPrefixLength : domainEnd+core.PathPrefixLength]
 
 		//处理/~/[domain]
 		if core.ExistDomain(domain) {
