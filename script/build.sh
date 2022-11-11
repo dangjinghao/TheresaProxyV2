@@ -1,19 +1,23 @@
 PROJECT_NAME=${1:-MultiProxy}
+version=${2}
+set CGO_ENABLED=0
 
-echo "linux build"
-CGO_ENABLED=0
-GOOS=linux
-GOARCH=amd64
-go build -ldflags="-w -s" -trimpath -o out/$PROJECT_NAME-$GOOS-$GOARCH
+oss=(windows linux darwin)
+archs=(amd64 arm64)
 
-echo "windows build"
-CGO_ENABLED=0
-GOOS=windows
-GOARCH=amd64
-go build -ldflags="-w -s" -trimpath -o out/$PROJECT_NAME-$GOOS-$GOARCH
+for os in ${oss[@]}
+do
+for arch in ${archs[@]}
+do
+        if [ ${os} == "windows" ]
+        then
+          suffix=".exe"
+        else
+          suffix=""
+        fi
 
-echo "darwin build"
-CGO_ENABLED=0
-GOOS=darwin
-GOARCH=amd64
-go build -ldflags="-w -s" -trimpath -o out/$PROJECT_NAME-$GOOS-$GOARCH
+        echo "build ${os}_${arch}"
+        env GOOS=${os} GOARCH=${arch} go build -trimpath -ldflags="-s -w -X main.Version=${version}"  -o out/${PROJECT_NAME}_${os}_${arch}${suffix}
+
+done
+done
